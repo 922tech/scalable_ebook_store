@@ -1,0 +1,359 @@
+version: "3.8"
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  postgres_data_authentication:
+    driver: local
+  postgres_data_supporters:
+    driver: local
+  postgres_data_documents:
+    driver: local
+  postgres_data_notification:
+    driver: local
+  postgres_data_ticketing:
+    driver: local
+  postgres_data_projects:
+    driver: local
+  postgres_data_participation:
+    driver: local
+services:
+  # ====================================  state full =============================================
+  postgres:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  postgres-supporters:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5433:5432
+    volumes:
+      - postgres_data_supporters:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SERVICE_SUPPORTERS}
+      POSTGRES_USER: ${POSTGRES_USER_SERVICE_SUPPORTERS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE_SUPPORTERS}
+      POSTGRES_HOST: ${POSTGRES_HOST_SERVICE_SUPPORTERS}
+      POSTGRES_PORT: ${POSTGRES_PORT_SERVICE_SUPPORTERS}
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  postgres-documents:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5434:5432
+    volumes:
+      - postgres_data_documents:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SERVICE_DOCUMENTS}
+      POSTGRES_USER: ${POSTGRES_USER_SERVICE_DOCUMENTS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE_DOCUMENTS}
+      POSTGRES_HOST: ${POSTGRES_HOST_SERVICE_DOCUMENTS}
+      POSTGRES_PORT: ${POSTGRES_PORT_SERVICE_DOCUMENTS}
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  postgres-authentication:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5435:5432
+    volumes:
+      - postgres_data_authentication:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SERVICE_AUTHENTICATION}
+      POSTGRES_USER: ${POSTGRES_USER_SERVICE_AUTHENTICATION}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE_AUTHENTICATION}
+      POSTGRES_HOST: ${POSTGRES_HOST_SERVICE_AUTHENTICATION}
+      POSTGRES_PORT: ${POSTGRES_PORT_SERVICE_AUTHENTICATION}
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  postgres-notification:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5436:5432
+    volumes:
+      - postgres_data_notification:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SERVICE_NOTIFICATION}
+      POSTGRES_USER: ${POSTGRES_USER_SERVICE_NOTIFICATION}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE_NOTIFICATION}
+      POSTGRES_HOST: ${POSTGRES_HOST_SERVICE_NOTIFICATION}
+      POSTGRES_PORT: ${POSTGRES_PORT_SERVICE_NOTIFICATION}
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  postgres-ticketing:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5437:5432
+    volumes:
+      - postgres_data_ticketing:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SERVICE_TICKETING}
+      POSTGRES_USER: ${POSTGRES_USER_SERVICE_TICKETING}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE_TICKETING}
+      POSTGRES_HOST: ${POSTGRES_HOST_SERVICE_TICKETING}
+      POSTGRES_PORT: ${POSTGRES_PORT_SERVICE_TICKETING}
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  postgres-projects:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5438:5432
+    volumes:
+      - postgres_data_projects:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SERVICE_PROJECTS}
+      POSTGRES_USER: ${POSTGRES_USER_SERVICE_PROJECTS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE_PROJECTS}
+      POSTGRES_HOST: ${POSTGRES_HOST_SERVICE_PROJECTS}
+      POSTGRES_PORT: ${POSTGRES_PORT_SERVICE_PROJECTS}
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  postgres-participation:
+    image: postgres:13.1-alpine
+
+    ports:
+      - 5439:5432
+    volumes:
+      - postgres_data_participation:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_SERVICE_PARTICIPATION}
+      POSTGRES_USER: ${POSTGRES_USER_SERVICE_PARTICIPATION}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE_PARTICIPATION}
+      POSTGRES_HOST: ${POSTGRES_HOST_SERVICE_PARTICIPATION}
+      POSTGRES_PORT: ${POSTGRES_PORT_SERVICE_PARTICIPATION}
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+  redis:
+    image: docker.io/bitnami/redis:6.0-debian-10
+
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - redis_data:/bitnami/redis/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+    labels:
+      com.datadoghq.ad.check_names: '["redisdb"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: '[{"host": "%%host%%","port":"6379"}]'
+  # =======================================   SERVERS   ===================================
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    image: sima_backend
+    command:
+      - /bin/bash
+      - -c
+      - |
+        while !</dev/tcp/$POSTGRES_HOST/$POSTGRES_PORT; do echo "waiting for postgres"; echo $POSTGRES_HOST; sleep 1; done;
+        python manage.py migrate --no-input
+        python manage.py loaddata apps/*/fixtures/enums/*.json
+        python manage.py loaddata apps/*/fixtures/*.json
+        python manage.py migrate supporters --database supporters --no-input
+        python manage.py loaddata services/supporters/fixtures/enums/*.json --database supporters
+        python manage.py loaddata services/supporters/fixtures/*.json --database supporters
+        python manage.py migrate documents --database documents --no-input
+        python manage.py loaddata services/documents/fixtures/enums/*.json --database documents
+        python manage.py loaddata services/documents/fixtures/*.json --database documents
+        python manage.py migrate authentication --database authentication --no-input
+        python manage.py migrate notification --database notification --no-input
+        python manage.py migrate ticketing --database ticketing --no-input
+        python manage.py loaddata services/ticketing/fixtures/enums/*.json --database ticketing
+        python manage.py loaddata services/ticketing/fixtures/*.json --database ticketing
+        python manage.py migrate projects --database projects --no-input
+        python manage.py loaddata services/projects/fixtures/enums/*.json --database projects
+        python manage.py loaddata services/projects/fixtures/*.json --database projects
+        python manage.py migrate participation --database participation --no-input
+        python manage.py loaddata services/participation/fixtures/enums/*.json --database participation
+        python manage.py loaddata services/participation/fixtures/*.json --database participation
+        python manage.py collectstatic --no-input
+
+    volumes:
+      - ./:/sima
+    env_file:
+      - docker/.envs
+    depends_on:
+      - postgres
+      - postgres-authentication
+      - postgres-documents
+      - postgres-notification
+      - postgres-ticketing
+      - postgres-supporters
+      - postgres-projects
+      - postgres-participation
+      - redis
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+      replicas: 1
+  nginx:
+    build:
+      context: ./docker/nginx/
+    image: nginx
+
+    ports:
+      - 80:80
+    depends_on:
+      - app
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+      replicas: 1
+
+#
+#  sima_celery_beat:
+#    image: sima_backend
+#    container_name: ${PROJECT_NAME}-celery_beat
+#    command: sh -c "celery -A ${PROJECT_NAME} beat --scheduler django_celery_beat.schedulers:DatabaseScheduler --loglevel=info"
+#    volumes:
+#      - ./:/sima
+#    env_file:
+#      - ./.env
+#    restart: unless-stopped
+#    depends_on:
+#      - redis
+#    logging:
+#      driver: "local"
+#      options:
+#        max-size: "50m"
+#        max-file: "3"
+##

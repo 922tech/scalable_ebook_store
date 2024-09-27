@@ -1,0 +1,11 @@
+.idea
+__pycache__
+docker/.envs*
+!docker/.envs.sample
+static/*
+env
+venv
+.coverage
+media
+/logs/
+*.log

@@ -1,0 +1,226 @@
+version: "3.8"
+
+networks:
+  ebook_store:
+    driver: bridge
+
+volumes:
+  typesense_data:
+  files:
+  flower_data:
+  redis_data:
+  postgres_data:
+
+services:
+  postgres:
+    image: postgres:13.1-alpine
+    networks:
+      - ebook_store
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - docker/.envs
+    command:
+      - "postgres"
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+
+  redis:
+    image: docker.io/bitnami/redis:6.0-debian-10
+    networks:
+      - ebook_store
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - redis_data:/bitnami/redis/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+    labels:
+      com.datadoghq.ad.check_names: '["redisdb"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: '[{"host": "%%host%%","port":"6379"}]'
+
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    image: ebook_store
+    command:
+      - /bin/bash
+      - -c
+      - |
+      
+        python manage.py migrate --no-input
+        python manage.py collectstatic --no-input
+        uvicorn project.asgi:application --host 0.0.0.0 --port 8000 --reload --workers 5
+    ports:
+      - 8000:8000
+    networks:
+      ebook_store:
+    volumes:
+      - ./:/ebook_store
+    env_file:
+      - docker/.envs
+    depends_on:
+      - postgres
+      - redis
+      - typesense
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+      replicas: 1
+  nginx:
+    build:
+      context: ./docker/nginx/
+    image: nginx
+
+    ports:
+      - 80:80
+    depends_on:
+      - app
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.main == 1
+      replicas: 1
+
+  typesense:
+    image: typesense/typesense:0.25.0
+    command: typesense-server --data-dir /data --api-key=xyz --enable-cors
+    environment:
+      - TYPESENSE_DATA_DIR=/data
+    volumes:
+      - typesense_data:/data
+    ports:
+      - "8108:8108"
+
+  minio:
+    restart: always
+    env_file:
+      - docker/.envs
+    container_name: ebook_minio
+    image: minio/minio
+
+    volumes:
+      - files:/data
+      - ./minio_entrypoint.sh:/usr/bin/minio_entrypoint.sh
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    entrypoint: sh -c "chmod +x /usr/bin/minio_entrypoint.sh && /usr/bin/minio_entrypoint.sh"
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 768M
+      restart_policy:
+        condition: on-failure
+
+
+  celery_worker:
+    image: ebook_store
+    container_name: ebook_store-celery-worker
+    command: sh -c "celery -A project worker --loglevel=info --without-mingle -Ofair --concurrency=${CELERY_CONCURRENCY:-1}"
+    volumes:
+       - ./:/ebook_store
+    env_file:
+      - docker/.envs
+    restart: unless-stopped
+    depends_on:
+      - redis
+    logging:
+      driver: "local"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+        - ebook_store
+        - default
+
+  celery_beat:
+    image: ebook_store
+    container_name: $ebook_store-celery_beat
+    command: sh -c "celery -A ebook_store beat --scheduler django_celery_beat.schedulers:DatabaseScheduler --loglevel=info"
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - fluent-bit
+    logging:
+      driver: fluentd
+
+  flower:
+    image: ebook_store
+    container_name: $ebook_store-celery_flower
+    command: sh -c "pip install flower && celery -A project flower --port=${FLOWER_PORT}"
+    volumes:
+      - .:/app
+      - flower_data:/usr/local/lib/python3.9/site-packages/flower/static/
+    env_file:
+      - ./.env
+    expose:
+      - ${FLOWER_PORT}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://${SITE_URL}:${FLOWER_PORT}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - fluent-bit
+    logging:
+      driver: fluentd
+
+  fluent-bit:
+    image: fluent/fluent-bit
+    container_name: $ebook_store-fluent-bit
+    env_file:
+      - ./.env
+    volumes:
+      - ./fluentd/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+    restart: unless-stopped
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"

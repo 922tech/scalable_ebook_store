@@ -1,0 +1,45 @@
+<!-- templates/upload.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Upload</title>
+    <script src="https://cdn.jsdelivr.net/npm/tus-js-client@latest/dist/tus.min.js"></script>
+</head>
+<body>
+<h1>Upload File</h1>
+<form id="upload-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="button" onclick="uploadFile()">Upload</button>
+</form>
+
+<script>
+    function uploadFile() {
+        const fileInput = document.querySelector('input[type="file"]');
+        const file = fileInput.files[0];
+
+        const upload = new tus.Upload(file, {
+            endpoint: '/store/books/register/',
+            retryDelays: [1000],
+            metadata: {
+                filename: file.name,
+                filetype: file.type
+            },
+            onError: function (error) {
+                console.log("Failed because: " + error);
+            },
+            onProgress: function (bytesUploaded, bytesTotal) {
+                const percentage = (bytesUploaded / bytesTotal * 100).toFixed(2);
+                console.log(bytesUploaded, bytesTotal, percentage + "%");
+            },
+            onSuccess: function () {
+                console.log("Download %s from %s", upload.file.name, upload.url);
+            }
+        });
+
+        upload.start();
+    }
+</script>
+</body>
+</html>
