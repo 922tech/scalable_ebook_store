@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+
+  fluent-bit:
+    image: fluent/fluent-bit:1.5
+    container_name: fluent-bit
+    volumes:
+      - ./fluent-bit/conf:/fluent-bit/etc
+    depends_on:
+      - elasticsearch
+    ports:
+      - "24224:24224"
+      - "5140:5140/udp"
+      - "2020:2020"
+    networks:
+      - elastic
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 100m
+        max-file: "5"
+
+  elasticsearch:
+    image: elasticsearch:8.14.3
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - bootstrap.memory_lock=false
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.security.enabled=false  # Ensure this is correctly set
+      - xpack.ml.enabled=false
+    networks:
+      - elastic
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.4.3
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - elastic
+
+networks:
+  elastic:
+    driver: bridge
